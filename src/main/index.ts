@@ -132,17 +132,21 @@ function createTray() {
   const contextMenu = Menu.buildFromTemplate([
     { 
       label: 'About BrowserPort', 
-      click: () => {
+      click: async () => {
         const appIconPath = path.join(process.env.VITE_PUBLIC ?? '', 'app-icon.png')
         const appIcon = nativeImage.createFromPath(appIconPath)
         
-        dialog.showMessageBox({
-          title: 'About BrowserPort',
-          message: `BrowserPort v${version}`,
-          detail: 'A cross-platform browser picker.\n\nCreated by @jCyrus',
-          buttons: ['OK'],
-          icon: appIcon
-        })
+        try {
+          await dialog.showMessageBox({
+            title: 'About BrowserPort',
+            message: `BrowserPort v${version}`,
+            detail: 'A cross-platform browser picker.\n\nCreated by @jCyrus',
+            buttons: ['OK'],
+            icon: appIcon
+          })
+        } catch (error) {
+          console.error('Failed to show about dialog:', error)
+        }
       } 
     },
     { type: 'separator' },
