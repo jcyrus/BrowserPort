@@ -1,0 +1,6 @@
+projectKey=BrowserPort
+serverUrl=http://localhost:9000
+serverVersion=25.10.0.114319
+dashboardUrl=http://localhost:9000/dashboard?id=BrowserPort
+ceTaskId=9828058a-f014-402e-b36e-c9b58a99ce43
+ceTaskUrl=http://localhost:9000/api/ce/task?id=9828058a-f014-402e-b36e-c9b58a99ce43
