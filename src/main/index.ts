@@ -132,13 +132,10 @@ function createWindow() {
     }
   })
 
-  // Only auto-hide on blur in production mode
-  // In dev mode, DevTools steals focus and would hide the window
-  if (!process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.on('blur', () => {
-      mainWindow?.hide()
-    })
-  }
+  // Note: We don't auto-hide on blur because it causes the window to close
+  // immediately when opened from another app. The window will hide when:
+  // 1. User presses Escape
+  // 2. User selects a browser (handled in IPC handler)
 
   mainWindow.on('closed', () => {
     mainWindow = null
