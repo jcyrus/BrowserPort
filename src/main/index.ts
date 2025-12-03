@@ -102,6 +102,9 @@ if (gotTheLock) {
 function createTray() {
   const iconPath = path.join(process.env.VITE_PUBLIC ?? '', 'tray.png')
   const icon = nativeImage.createFromPath(iconPath)
+  if (process.platform === 'darwin') {
+    icon.setTemplateImage(true)
+  }
   
   tray = new Tray(icon)
   tray.setToolTip('BrowserPort')
