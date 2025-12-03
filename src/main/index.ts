@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BrowserManager } from './browserManager'
@@ -19,6 +19,7 @@ process.env.VITE_PUBLIC = app.isPackaged
   : path.join(process.env.DIST, '../public')
 
 let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
 let pendingUrl: string | null = null
 const browserManager = new BrowserManager()
 
@@ -43,6 +44,14 @@ if (gotTheLock) {
   // Use async IIFE for initialization
   void (async () => {
     await app.whenReady()
+
+    // Hide from dock immediately (macOS)
+    if (process.platform === 'darwin') {
+      app.dock.hide()
+    }
+
+    // Create Tray Icon
+    createTray()
 
     // Detect browsers on startup
     await browserManager.detectBrowsers()
@@ -78,9 +87,10 @@ if (gotTheLock) {
   })()
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-      app.quit()
-    }
+    // Don't quit when window is closed, keep tray running
+    // if (process.platform !== 'darwin') {
+    //   app.quit()
+    // }
   })
 
   app.on('activate', () => {
@@ -90,6 +100,49 @@ if (gotTheLock) {
   })
 } else {
   app.quit()
+}
+
+function createTray() {
+  const iconPath = path.join(process.env.VITE_PUBLIC ?? '', 'tray.png')
+  const icon = nativeImage.createFromPath(iconPath)
+  
+  tray = new Tray(icon)
+  tray.setToolTip('BrowserPort')
+
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: 'About BrowserPort', 
+      click: () => {
+        const appIconPath = path.join(process.env.VITE_PUBLIC ?? '', 'app-icon.png')
+        const appIcon = nativeImage.createFromPath(appIconPath)
+        
+        dialog.showMessageBox({
+          title: 'About BrowserPort',
+          message: 'BrowserPort v0.1.1',
+          detail: 'A cross-platform browser picker.\n\nCreated by @jCyrus',
+          buttons: ['OK'],
+          icon: appIcon
+        })
+      } 
+    },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() }
+  ])
+
+  tray.setContextMenu(contextMenu)
+  
+  // Optional: Toggle window on click (if not right-click)
+  tray.on('click', () => {
+    if (mainWindow?.isVisible()) {
+      mainWindow.hide()
+    } else {
+      // If we want to show it, we might need a URL or just show the empty state?
+      // For now, let's just focus if visible, or maybe do nothing if no URL pending.
+      // The user asked for "About menu when they click and exit", which is covered by context menu.
+      // Usually left click also opens menu on macOS if no action is defined, or we can pop the menu.
+      tray?.popUpContextMenu()
+    }
+  })
 }
 
 function createWindow() {
@@ -102,6 +155,7 @@ function createWindow() {
     alwaysOnTop: true,
     center: true,
     show: false, // Don't show until ready
+    skipTaskbar: true, // Hide from taskbar (Windows/Linux)
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
@@ -165,11 +219,8 @@ function showWindowWithUrl(url: string) {
   // Show and focus the window
   mainWindow.show()
   mainWindow.focus()
-
-  // Ensure keyboard focus
-  if (process.platform === 'darwin') {
-    app.dock.show()
-  }
+  
+  // Note: We removed app.dock.show() to keep it hidden
 }
 
 // IPC Handlers
